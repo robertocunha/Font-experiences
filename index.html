@@ -50,6 +50,387 @@
     .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; background:#0a0f15; border:1px solid #1e2734; padding:2px 6px; border-radius:6px; font-size:12px}
     .footer{margin-top:24px; color:#8fa1b2; font-size:12px}
     .hr{height:1px; background:#1c2430; margin:12px 0}
+      /* Mobile drawer + overlay */
+    #scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:saturate(120%) blur(1px);z-index:40}
+    #scrim.show{display:block}
+    .only-mobile{display:none}@media (max-width: 900px){
+  body{grid-template-columns:1fr}
+  #sidebar{position:fixed; z-index:50; inset:0 auto 0 0; width:min(88vw, 360px); transform:translateX(-100%); transition:transform .25s ease-out; box-shadow: 8px 0 24px rgba(0,0,0,.35);}
+  #sidebar.open{transform:translateX(0)}
+  main{padding:20px 6vw}
+  .topbar{position:sticky; top:0; background:linear-gradient(180deg,var(--bg),color-mix(in srgb, var(--bg) 70%, transparent)); padding:10px 0; z-index:10}
+  .hide-on-mobile{display:none}
+  .only-mobile{display:inline-flex}
+}
+
+  </style>
+</head>
+<body>
+  <aside class="controls sticky" id="sidebar">
+    <div class="stack">
+      <div class="row" style="justify-content:space-between;">
+        <div class="badge">Testador de Pares</div>
+        <button class="btn ghost" id="toggleScheme">Tema: Escuro</button>
+        <button class="btn ghost only-mobile" id="closeSidebar">Fechar</button>
+      </div>
+        <button class="btn ghost" id="toggleScheme">Tema: Escuro</button>
+      </div><div class="group">
+    <h3>Fontes (Google Fonts)</h3>
+    <div class="grid-2">
+      <div>
+        <label for="headingFont">Título</label>
+        <select id="headingFont"></select>
+      </div>
+      <div>
+        <label for="bodyFont">Corpo</label>
+        <select id="bodyFont"></select>
+      </div>
+    </div>
+    <div class="grid-2" style="margin-top:8px">
+      <div>
+        <label for="headingWeight">Peso do título</label>
+        <select id="headingWeight"></select>
+      </div>
+      <div>
+        <label for="bodyWeight">Peso do corpo</label>
+        <select id="bodyWeight"></select>
+      </div>
+    </div>
+    <div class="grid-2" style="margin-top:8px">
+      <div>
+        <label for="headingSize">Tamanho título (px)</label>
+        <input id="headingSize" type="number" min="12" max="96" value="40" />
+      </div>
+      <div>
+        <label for="bodySize">Tamanho corpo (px)</label>
+        <input id="bodySize" type="number" min="12" max="28" value="16" />
+      </div>
+    </div>
+    <div class="grid-2" style="margin-top:8px">
+      <div>
+        <label for="lineHeight">Altura da linha</label>
+        <input id="lineHeight" type="number" step="0.05" min="1" max="2.2" value="1.6" />
+      </div>
+      <div>
+        <label for="measure">Largura de linha (ch)</label>
+        <input id="measure" type="number" min="40" max="90" value="70" />
+      </div>
+    </div>
+  </div>
+
+  <div class="group">
+    <h3>Presets de pares</h3>
+    <div class="stack" id="pairs"></div>
+  </div>
+
+  <div class="group">
+    <h3>Texto de exemplo</h3>
+    <label for="titleText">Título</label>
+    <input id="titleText" type="text" value="Seu site, com tipografia em ordem" />
+    <label for="subtitleText" style="margin-top:8px">Subtítulo</label>
+    <input id="subtitleText" type="text" value="Um laboratório rápido para testar pares de fontes" />
+    <label for="bodyText" style="margin-top:8px">Parágrafo</label>
+    <textarea id="bodyText" rows="6">Escolha uma fonte para títulos e outra para o corpo do texto. Ajuste pesos, tamanhos e a largura de linha. Este texto é apenas um placeholder para você sentir o ritmo, o tom e a legibilidade.
+
+Dica: combine contraste (serifa vs. sem serifa, geométrica vs. humanista) com harmonia (proporções e textura parecidas). </textarea> </div>
+
+<div class="row">
+    <button class="btn" id="save">Salvar preset</button>
+    <button class="btn ghost" id="reset">Redefinir</button>
+  </div>
+  <div class="footer">Atalho: <span class="kbd">Ctrl</span> + <span class="kbd">S</span> para salvar preset.</div>
+</div>
+
+  </aside>
+  <div id="scrim"></div>  <main>
+    <div class="topbar">
+      <button class="btn ghost" id="openSidebar" aria-controls="sidebar" aria-expanded="false">☰ Menu</button>
+      <div class="pill"><span id="currentPair">—</span></div>
+      <div class="pill">Google Fonts • Pareamento rápido</div>
+    </div><section class="sample" id="sample">
+  <h1 id="h1">Seu site, com tipografia em ordem</h1>
+  <h2 id="h2">Um laboratório rápido para testar pares de fontes</h2>
+  <p class="muted">Botão de exemplo:</p>
+  <div class="row" style="margin:8px 0 18px">
+    <button class="btn" id="cta">Chamar para ação</button>
+    <button class="btn ghost">Secundário</button>
+  </div>
+  <div class="card">
+    <p id="p1">Escolha uma fonte para títulos e outra para o corpo do texto. Ajuste pesos, tamanhos e a largura de linha. Este texto é apenas um placeholder para você sentir o ritmo, o tom e a legibilidade.</p>
+    <p id="p2">Dica: combine contraste (serifa vs. sem serifa, geométrica vs. humanista) com harmonia (proporções e textura parecidas).</p>
+  </div>
+</section>
+
+  </main>  <script>
+    // === Utilidades ===
+    const $ = (s, el=document) => el.querySelector(s);
+    const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+    const enc = s => encodeURIComponent(s).replace(/%20/g,'+');
+
+    // Catálogo curado (Google Fonts)
+    const FONT_CATALOG = [
+      { family:"Inter", weights:[300,400,500,600,700,800] },
+      { family:"Roboto", weights:[300,400,500,700,900] },
+      { family:"Lato", weights:[300,400,700,900] },
+      { family:"Open Sans", weights:[300,400,600,700,800] },
+      { family:"Montserrat", weights:[300,400,500,600,700,800,900] },
+      { family:"Source Sans 3", weights:[300,400,500,600,700,800] },
+      { family:"Source Serif 4", weights:[300,400,500,600,700,800] },
+      { family:"Libre Baskerville", weights:[400,700] },
+      { family:"Lora", weights:[400,500,600,700] },
+      { family:"Playfair Display", weights:[400,500,600,700,800] },
+      { family:"Merriweather", weights:[300,400,700,900] },
+      { family:"League Spartan", weights:[300,400,500,600,700,800,900] },
+      { family:"Bebas Neue", weights:[400] },
+    ];
+
+    const PRESETS = [
+      {name:"Editorial clássico", h:{family:"Playfair Display", weight:700, size:44}, b:{family:"Source Sans 3", weight:400, size:16}},
+      {name:"Sofisticação discreta", h:{family:"Lora", weight:700, size:40}, b:{family:"Inter", weight:400, size:16}},
+      {name:"Revista moderna", h:{family:"Libre Baskerville", weight:700, size:42}, b:{family:"League Spartan", weight:500, size:16}},
+      {name:"Tech direto ao ponto", h:{family:"Montserrat", weight:700, size:40}, b:{family:"Open Sans", weight:400, size:16}},
+      {name:"Impacto minimal", h:{family:"Bebas Neue", weight:400, size:56}, b:{family:"Lato", weight:400, size:17}},
+      {name:"Clássico legível", h:{family:"Merriweather", weight:900, size:40}, b:{family:"Source Sans 3", weight:400, size:16}},
+    ];
+
+    // Carrega Google Font dinamicamente
+    const loadedLinks = new Map();
+    function loadGoogleFont(family, weights){
+      const key = family+"-"+weights.join(";");
+      if(loadedLinks.has(key)) return;
+      const id = "gf-"+key.replace(/\s+/g,'-');
+      const link = document.createElement('link');
+      link.id = id;
+      link.rel = 'stylesheet';
+      const weightParam = ":wght@" + [...new Set(weights)].sort((a,b)=>a-b).join(';');
+      link.href = `https://fonts.googleapis.com/css2?family=${enc(family)}${weightParam}&display=swap`;
+      document.head.appendChild(link);
+      loadedLinks.set(key, true);
+    }
+
+    function populateFontSelect(select){
+      select.innerHTML = FONT_CATALOG.map(f => `<option value="${f.family}">${f.family}</option>`).join('');
+    }
+    function populateWeightSelect(select, family){
+      const font = FONT_CATALOG.find(f=>f.family===family) || FONT_CATALOG[0];
+      select.innerHTML = font.weights.map(w=>`<option value="${w}">${w}</option>`).join('');
+    }
+
+    // Estado
+    const state = {
+      hFamily: 'Lora', hWeight: 700, hSize: 40,
+      bFamily: 'Inter', bWeight: 400, bSize: 16,
+      lineHeight: 1.6, measure: 70,
+      scheme: 'dark',
+      titleText: '', subtitleText: '', bodyText: ''
+    };
+
+    // Liga UI
+    const headingFont = $('#headingFont');
+    const bodyFont = $('#bodyFont');
+    const headingWeight = $('#headingWeight');
+    const bodyWeight = $('#bodyWeight');
+    const headingSize = $('#headingSize');
+    const bodySize = $('#bodySize');
+    const lineHeight = $('#lineHeight');
+    const measure = $('#measure');
+    const currentPair = $('#currentPair');
+
+    function applyState(){
+      // Garantir carregamento das famílias/pesos atuais
+      const hFont = FONT_CATALOG.find(f=>f.family===state.hFamily) || FONT_CATALOG[0];
+      const bFont = FONT_CATALOG.find(f=>f.family===state.bFamily) || FONT_CATALOG[0];
+      loadGoogleFont(hFont.family, hFont.weights);
+      loadGoogleFont(bFont.family, bFont.weights);
+
+      // Aplica no DOM
+      document.documentElement.style.setProperty('--measure', state.measure+'ch');
+      $('#h1').style.fontFamily = `'${state.hFamily}', ui-sans-serif, system-ui`;
+      $('#h1').style.fontWeight = state.hWeight;
+      $('#h1').style.fontSize = state.hSize+'px';
+
+      $('#h2').style.fontFamily = `'${state.bFamily}', ui-sans-serif, system-ui`;
+      $('#h2').style.fontWeight = state.bWeight;
+      $('#h2').style.lineHeight = state.lineHeight;
+
+      $$('#p1, #p2, .card, .btn, .pill').forEach(el=>{
+        el.style.fontFamily = `'${state.bFamily}', ui-sans-serif, system-ui`;
+        el.style.fontWeight = state.bWeight;
+        el.style.fontSize = state.bSize+'px';
+        el.style.lineHeight = state.lineHeight;
+      });
+
+      // Textos customizados
+      if(state.titleText) $('#h1').textContent = state.titleText;
+      if(state.subtitleText) $('#h2').textContent = state.subtitleText;
+      if(state.bodyText){
+        const parts = state.bodyText.split(/\n\n+/);
+        $('#p1').textContent = parts[0] || '';
+        $('#p2').textContent = parts[1] || '';
+      }
+
+      currentPair.textContent = `${state.hFamily} (${state.hWeight}) + ${state.bFamily} (${state.bWeight})`;
+
+      // Sincroniza selects/inputs
+      headingFont.value = state.hFamily;
+      bodyFont.value = state.bFamily;
+      populateWeightSelect(headingWeight, state.hFamily);
+      populateWeightSelect(bodyWeight, state.bFamily);
+      headingWeight.value = String(state.hWeight);
+      bodyWeight.value = String(state.bWeight);
+      headingSize.value = state.hSize;
+      bodySize.value = state.bSize;
+      lineHeight.value = state.lineHeight;
+      measure.value = state.measure;
+    }
+
+    function usePreset(p){
+      state.hFamily = p.h.family; state.hWeight = p.h.weight; state.hSize = p.h.size;
+      state.bFamily = p.b.family; state.bWeight = p.b.weight; state.bSize = p.b.size;
+      applyState();
+      persist();
+    }
+
+    function persist(){ localStorage.setItem('typepair_state', JSON.stringify(state)); }
+    function restore(){
+      const raw = localStorage.getItem('typepair_state');
+      if(!raw) return;
+      try{ Object.assign(state, JSON.parse(raw)); }catch(e){}
+    }
+
+    function buildUI(){
+      populateFontSelect(headingFont); populateFontSelect(bodyFont);
+      populateWeightSelect(headingWeight, state.hFamily);
+      populateWeightSelect(bodyWeight, state.bFamily);
+      // Presets
+      const list = $('#pairs');
+      list.innerHTML = '';
+      PRESETS.forEach((p,i)=>{
+        const btn = document.createElement('button');
+        btn.className = 'pair-btn';
+        btn.innerHTML = `<strong>${p.name}</strong><small>${p.h.family} + ${p.b.family}</small>`;
+        btn.addEventListener('click', ()=>usePreset(p));
+        list.appendChild(btn);
+      });
+    }
+
+    // Eventos
+    headingFont.addEventListener('change', e=>{ state.hFamily = e.target.value; applyState(); persist(); });
+    bodyFont.addEventListener('change', e=>{ state.bFamily = e.target.value; applyState(); persist(); });
+    headingWeight.addEventListener('change', e=>{ state.hWeight = +e.target.value; applyState(); persist(); });
+    bodyWeight.addEventListener('change', e=>{ state.bWeight = +e.target.value; applyState(); persist(); });
+    headingSize.addEventListener('input', e=>{ state.hSize = +e.target.value; applyState(); persist(); });
+    bodySize.addEventListener('input', e=>{ state.bSize = +e.target.value; applyState(); persist(); });
+    lineHeight.addEventListener('input', e=>{ state.lineHeight = +e.target.value; applyState(); persist(); });
+    measure.addEventListener('input', e=>{ state.measure = +e.target.value; applyState(); persist(); });
+
+    // Text inputs
+    $('#titleText').addEventListener('input', e=>{ state.titleText = e.target.value; applyState(); persist(); });
+    $('#subtitleText').addEventListener('input', e=>{ state.subtitleText = e.target.value; applyState(); persist(); });
+    $('#bodyText').addEventListener('input', e=>{ state.bodyText = e.target.value; applyState(); persist(); });
+
+    // Tema
+    const toggleScheme = $('#toggleScheme');
+    function setScheme(mode){
+      if(mode==='light'){
+        document.documentElement.style.setProperty('--bg','#f6f7f9');
+        document.documentElement.style.setProperty('--panel','#ffffff');
+        document.documentElement.style.setProperty('--panel-2','#f2f4f7');
+        document.documentElement.style.setProperty('--text','#0e1216');
+        document.documentElement.style.setProperty('--muted','#54606a');
+        document.documentElement.style.setProperty('--accent','#0b6bcb');
+        document.documentElement.style.setProperty('--ring','#4ea1ff');
+        toggleScheme.textContent = 'Tema: Claro';
+      } else {
+        document.documentElement.style.setProperty('--bg','#0b0d10');
+        document.documentElement.style.setProperty('--panel','#12161b');
+        document.documentElement.style.setProperty('--panel-2','#0e1115');
+        document.documentElement.style.setProperty('--text','#e8eef3');
+        document.documentElement.style.setProperty('--muted','#97a3ad');
+        document.documentElement.style.setProperty('--accent','#4ea1ff');
+        document.documentElement.style.setProperty('--ring','#2b6fb9');
+        toggleScheme.textContent = 'Tema: Escuro';
+      }
+      state.scheme = mode; persist();
+    }
+    toggleScheme.addEventListener('click', ()=> setScheme(state.scheme==='dark'?'light':'dark'));
+
+    // Salvar/Redefinir
+    $('#save').addEventListener('click', ()=>{
+      const saved = JSON.parse(localStorage.getItem('typepair_custom')||'[]');
+      saved.push({
+        name: new Date().toLocaleString(),
+        h:{family: state.hFamily, weight: state.hWeight, size: state.hSize},
+        b:{family: state.bFamily, weight: state.bWeight, size: state.bSize}
+      });
+      localStorage.setItem('typepair_custom', JSON.stringify(saved));
+      alert('Preset salvo no seu navegador.');
+    });
+    $('#reset').addEventListener('click', ()=>{
+      localStorage.removeItem('typepair_state');
+      location.reload();
+    });
+    document.addEventListener('keydown', (e)=>{
+      if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){
+        e.preventDefault(); $('#save').click();
+      }
+    });
+
+    // Mobile drawer logic + persistência + gestos
+    const sidebar = $('#sidebar');
+    const scrim = $('#scrim');
+    const openSidebarBtn = $('#openSidebar');
+    const closeSidebarBtn = $('#closeSidebar');
+    const SIDEBAR_KEY = 'typepair_sidebar_open';
+
+    function openSidebar(){
+      sidebar.classList.add('open');
+      scrim.classList.add('show');
+      openSidebarBtn?.setAttribute('aria-expanded','true');
+      try{ localStorage.setItem(SIDEBAR_KEY,'1'); }catch(e){}
+    }
+    function closeSidebar(){
+      sidebar.classList.remove('open');
+      scrim.classList.remove('show');
+      openSidebarBtn?.setAttribute('aria-expanded','false');
+      try{ localStorage.removeItem(SIDEBAR_KEY); }catch(e){}
+    }
+    openSidebarBtn?.addEventListener('click', ()=> sidebar.classList.contains('open') ? closeSidebar() : openSidebar());
+    closeSidebarBtn?.addEventListener('click', closeSidebar);
+    scrim?.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeSidebar(); });
+
+    // Restaurar estado salvo (apenas em viewport móvel)
+    const mql = window.matchMedia('(max-width: 900px)');
+    if(mql.matches && localStorage.getItem(SIDEBAR_KEY)==='1'){
+      openSidebar();
+    }
+
+    // Gestos de borda (abre com swipe da borda esquerda; fecha com swipe para a esquerda)
+    let tracking = null; // 'open' | 'close' | null
+    let startX = 0, startY = 0;
+    const MIN_DIST = 60; // px
+    const MAX_SLOPE = 50; // tolerância vertical
+
+    document.addEventListener('touchstart', (e)=>{
+      if(!mql.matches) return; // só no mobile
+      const t = e.touches[0];
+      // se fechado e ded    .grid-3{display:grid; grid-template-columns: repeat(3,1fr); gap:10px}
+    .btn{cursor:pointer; border:1px solid #24405f; background:#0b1520; color:#cfe5ff; border-radius:10px; padding:9px 10px; font-weight:600}
+    .btn:hover{background:#0d1b2a}
+    .btn.ghost{background:transparent; border-color:#2a3645; color:#b9c6d3}
+    .pair-btn{padding:8px 10px; border-radius:10px; background:#0e1420; border:1px solid #233044; color:#c8d6e3; text-align:left}
+    .pair-btn small{display:block; color:#94a3b0}
+    .topbar{display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:22px}
+    .pill{display:inline-flex; align-items:center; gap:8px; background:#0b1420; border:1px solid #243247; padding:6px 10px; border-radius:999px}
+    .sample{max-width: var(--measure, 70ch)}
+    .card{border:1px solid #1f2834; background:#0c1015; border-radius:16px; padding:16px; margin-top:18px}
+    .muted{color:var(--muted)}
+    .slider{accent-color: var(--accent)}
+    .sticky{position:sticky; top:0}
+    .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; background:#0a0f15; border:1px solid #1e2734; padding:2px 6px; border-radius:6px; font-size:12px}
+    .footer{margin-top:24px; color:#8fa1b2; font-size:12px}
+    .hr{height:1px; background:#1c2430; margin:12px 0}
   </style>
 </head>
 <body>
